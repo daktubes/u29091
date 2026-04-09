@@ -65,20 +65,57 @@ jobs:
           curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
 
           python3 - <<'PY'
-          import pathlib, re, urllib.parse
+          import pathlib, re, json, urllib.parse
+          from urllib.request import urlopen
 
           metrics = pathlib.Path("metrics.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
           keys = pathlib.Path("all_keys.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
 
+          def flag_from_ip(ip):
+              try:
+                  with urlopen(f"https://ipwho.is/{ip}", timeout=8) as r:
+                      data = json.loads(r.read().decode("utf-8", "ignore"))
+                  if data.get("success") and data.get("country_code"):
+                      cc = data["country_code"].upper()
+                      if len(cc) == 2:
+                          return chr(127397 + ord(cc[0])) + chr(127397 + ord(cc[1]))
+              except Exception:
+                  pass
+              return "🌐"
+
+          def ip_from_address(addr):
+              if not addr:
+                  return ""
+              if addr.startswith("[") and "]" in addr:
+                  return addr[1:addr.index("]")]
+              return addr.split(":")[0]
+
+          items = []
           names = []
+
           for line in metrics:
-              if 'xray_proxy_status' not in line:
+              if "xray_proxy_status" not in line:
                   continue
               if not line.strip().endswith(" 1"):
                   continue
-              m = re.search(r'name="([^"]+)"', line)
-              if m:
-                  names.append(m.group(1))
+
+              name_m = re.search(r'name="([^"]+)"', line)
+              addr_m = re.search(r'address="([^"]+)"', line)
+              if not name_m or not addr_m:
+                  continue
+
+              name = name_m.group(1)
+              addr = addr_m.group(1)
+              ip = ip_from_address(addr)
+              flag = flag_from_ip(ip)
+
+              items.append({
+                  "name": name,
+                  "address": addr,
+                  "ip": ip,
+                  "flag": flag
+              })
+              names.append(name)
 
           pathlib.Path("checked/working_names.txt").write_text(
               "\n".join(names) + ("\n" if names else ""),
@@ -96,8 +133,26 @@ jobs:
                       seen.add(k)
                       break
 
+          working_vless = []
+          working_comments = []
+
+          for i, item in enumerate(items, 1):
+              if i <= len(out):
+                  working_vless.append(f"{i:03d}. {out[i-1]}")
+                  working_comments.append(f'{item["flag"]} LTE {i} | тгк: @rostunnel')
+
           pathlib.Path("checked/working_vless.txt").write_text(
-              "\n".join(out) + ("\n" if out else ""),
+              "\n".join(working_vless) + ("\n" if working_vless else ""),
+              encoding="utf-8"
+          )
+
+          pathlib.Path("checked/working_vless_top100.txt").write_text(
+              "\n".join(working_vless[:100]) + ("\n" if working_vless[:100] else ""),
+              encoding="utf-8"
+          )
+
+          pathlib.Path("checked/working_vless_comments.txt").write_text(
+              "\n".join(working_comments) + ("\n" if working_comments else ""),
               encoding="utf-8"
           )
           PY
