@@ -1,21 +1,104 @@
-2026/04/09 20:46:04 Check completed
-1s
-Run # 1. Получаем метрики только для job=github-actions
-awk: fatal: cannot open file `checked/working_names.txt' for reading: No such file or directory
-Error: Process completed with exit code 2.
-0s
-0s
-Post job cleanup.
-/usr/bin/git version
-git version 2.53.0
-Temporarily overriding HOME='/home/runner/work/_temp/d9b891c8-acc0-4ebd-9522-196e9799cb51' before making global git config changes
-Adding repository directory to the temporary git global config as a safe directory
-/usr/bin/git config --global --add safe.directory /home/runner/work/xraychecker-test/xraychecker-test
-/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-http.https://github.com/.extraheader
-/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-/usr/bin/git submodule foreach --
+name: Run xray-checker
+
+on:
+  workflow_dispatch:
+    inputs:
+      args:
+        description: "Arguments for xray-checker"
+        required: true
+        default: "--help"
+  schedule:
+    - cron: "0 */30 * * *"
+
+jobs:
+  run-xray-checker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest release info
+        id: latest-release
+        run: |
+          set -euo pipefail
+          LATEST_URL=$(curl -fsSL https://api.github.com/repos/kutovoys/xray-checker/releases/latest | grep "browser_download_url.*linux-amd64.tar.gz" | cut -d '"' -f 4)
+          echo "download_url=$LATEST_URL" >> "$GITHUB_OUTPUT"
+          echo "archive_name=$(basename "$LATEST_URL")" >> "$GITHUB_OUTPUT"
+
+      - name: Create work directory
+        run: mkdir -p xray-checker checked
+
+      - name: Download release archive
+        working-directory: xray-checker
+        run: |
+          set -euo pipefail
+          wget -q "${{ steps.latest-release.outputs.download_url }}"
+          tar xzf "${{ steps.latest-release.outputs.archive_name }}"
+          chmod +x xray-checker
+
+      - name: Run xray-checker
+        working-directory: xray-checker
+        env:
+          INSTANCE: ${{ secrets.INSTANCE || 'github-actions' }}
+        run: |
+          set -euo pipefail
+          ./xray-checker \
+            --subscription-url=https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-all.txt \
+            --subscription-url=https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt \
+            --subscription-url=https://raw.githubusercontent.com/EtoNeYaProject/etoneyaproject.github.io/refs/heads/main/whitelist \
+            --subscription-url=https://wlrus.lol/confs/selected.txt \
+            --metrics-push-url=http://150.241.65.18:9091/metrics/job/github-actions \
+            --metrics-instance=github-actions \
+            --run-once
+
+      - name: Extract working VLESS keys
+        run: |
+          set -euo pipefail
+
+          curl -fsSL "http://150.241.65.18:9091/metrics/job/github-actions" > metrics.txt
+          curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
+
+          python3 - <<'PY'
+          import pathlib, re, urllib.parse
+
+          metrics = pathlib.Path("metrics.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
+          keys = pathlib.Path("all_keys.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
+
+          names = []
+          for line in metrics:
+              if 'xray_proxy_status' not in line:
+                  continue
+              if not line.rstrip().endswith(" 1"):
+                  continue
+              m = re.search(r'name="([^"]+)"', line)
+              if m:
+                  names.append(m.group(1))
+
+          pathlib.Path("checked/working_names.txt").write_text(
+              "\n".join(names) + ("\n" if names else ""),
+              encoding="utf-8"
+          )
+
+          out = []
+          seen = set()
+
+          for name in names:
+              q = urllib.parse.quote(name, safe="")
+              for k in keys:
+                  if q in k and k not in seen:
+                      out.append(k)
+                      seen.add(k)
+                      break
+
+          pathlib.Path("checked/working_vless.txt").write_text(
+              "\n".join(out) + ("\n" if out else ""),
+              encoding="utf-8"
+          )
+          PY
+
+      - name: Commit Results
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 Auto-update [${{ github.run_id }}]"
+          file_pattern: "checked/*"
