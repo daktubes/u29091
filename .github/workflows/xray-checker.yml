@@ -53,8 +53,10 @@ jobs:
             --subscription-url=https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt \
             --subscription-url=https://raw.githubusercontent.com/EtoNeYaProject/etoneyaproject.github.io/refs/heads/main/whitelist \
             --subscription-url=https://wlrus.lol/confs/selected.txt \
+            --subscription-url=https://raw.githubusercontent.com/ByeWhiteLists/ByeWhiteLists2/refs/heads/main/ByeWhiteLists2.txt \
             --metrics-push-url=http://150.241.65.18:9091/metrics/job/github-actions \
             --metrics-instance=github-actions \
+            --proxy-check-method=status \
             --run-once
 
       - name: Build working keys
@@ -66,6 +68,7 @@ jobs:
 
           python3 - <<'PY'
           import pathlib, re, json, urllib.parse, urllib.request
+          from urllib.parse import unquote
 
           metrics = pathlib.Path("metrics.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
           keys = pathlib.Path("all_keys.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
@@ -80,7 +83,7 @@ jobs:
                           return chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
               except Exception:
                   pass
-              return "🌐"
+              return "🇷🇺"
 
           def ip_from_address(addr):
               if not addr:
@@ -88,6 +91,29 @@ jobs:
               if addr.startswith("[") and "]" in addr:
                   return addr[1:addr.index("]")]
               return addr.split(":")[0]
+
+          def extract_flag_from_original(raw_text):
+              """Улучшенное распознавание флага из оригинального комментария"""
+              if not raw_text:
+                  return None
+              
+              # Сначала ищем Unicode флаги (последовательность из 2 региональных индикаторов)
+              flag_match = re.search(r'([\U0001F1E6-\U0001F1FF][\U0001F1E6-\U0001F1FF])', raw_text)
+              if flag_match:
+                  return flag_match.group(1)
+              
+              # Ищем URL-encoded флаги (например %F0%9F%87%AB%F0%9F%87%AE)
+              encoded_flags = re.findall(r'%F0%9F%87[AB-E][AB-E]', raw_text)
+              if len(encoded_flags) >= 2:
+                  # Декодируем первые два подряд идущих флага
+                  try:
+                      flag1 = bytes.fromhex(encoded_flags[0][2:]).decode('utf-8', errors='ignore')
+                      flag2 = bytes.fromhex(encoded_flags[1][2:]).decode('utf-8', errors='ignore')
+                      return flag1 + flag2
+                  except:
+                      pass
+              
+              return None
 
           items = []
           names = []
@@ -106,10 +132,11 @@ jobs:
               name = name_m.group(1)
               addr = addr_m.group(1)
               ip = ip_from_address(addr)
-              flag = flag_from_ip(ip)
+              geo_flag = flag_from_ip(ip)
 
               items.append({
-                  "flag": flag
+                  "name": name,
+                  "geo_flag": geo_flag
               })
               names.append(name)
 
@@ -126,8 +153,17 @@ jobs:
 
           working_vless = []
           for i, vless in enumerate(matched, 1):
-              base = vless.split("#", 1)[0]
-              comment = f"{items[i-1]['flag']} LTE {i} | тгк: @rostunnel"
+              # Извлекаем базовую часть VLESS
+              base = vless.split("#", 1)[0] if "#" in vless else vless
+              
+              # Пытаемся извлечь флаг из оригинального комментария (и name из метрик)
+              orig_comment = vless.split("#", 1)[1] if "#" in vless else ""
+              orig_flag = extract_flag_from_original(orig_comment) or extract_flag_from_original(items[i-1]["name"])
+              
+              # Логика выбора флага: оригинал -> geo API -> 🇷🇺
+              final_flag = orig_flag or items[i-1]["geo_flag"]
+              
+              comment = f"{final_flag} LTE {i} | тгк: @rostunnel"
               encoded_comment = urllib.parse.quote(comment, safe="@")
               working_vless.append(f"{base}#{encoded_comment}")
 
