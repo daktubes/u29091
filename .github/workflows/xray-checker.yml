@@ -65,20 +65,21 @@ jobs:
           curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
 
           python3 - <<'PY'
-          import pathlib, re, json, urllib.parse
-          from urllib.request import urlopen
+          import pathlib, re, json, urllib.parse, urllib.request, html
+          from urllib.parse import urlparse, parse_qs, unquote
 
           metrics = pathlib.Path("metrics.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
           keys = pathlib.Path("all_keys.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
 
           def flag_from_ip(ip):
               try:
-                  with urlopen(f"https://ipwho.is/{ip}", timeout=8) as r:
+                  url = f"https://ipapi.co/{ip}/json/"
+                  with urllib.request.urlopen(url, timeout=8) as r:
                       data = json.loads(r.read().decode("utf-8", "ignore"))
-                  if data.get("success") and data.get("country_code"):
-                      cc = data["country_code"].upper()
-                      if len(cc) == 2:
-                          return chr(127397 + ord(cc[0])) + chr(127397 + ord(cc[1]))
+                  code = data.get("country_code")
+                  if code and len(code) == 2:
+                      code = code.upper()
+                      return chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
               except Exception:
                   pass
               return "🌐"
@@ -89,6 +90,21 @@ jobs:
               if addr.startswith("[") and "]" in addr:
                   return addr[1:addr.index("]")]
               return addr.split(":")[0]
+
+          def extract_comment(vless_line):
+              if "#" not in vless_line:
+                  return ""
+              comment = vless_line.split("#", 1)[1]
+              return urllib.parse.unquote(comment).strip()
+
+          def has_flag(text):
+              return bool(re.search(r'[\U0001F1E6-\U0001F1FF]{2}', text))
+
+          def normalize_comment(name, flag, idx):
+              raw = unquote(name).strip()
+              if has_flag(raw):
+                  return raw
+              return f"{flag} LTE {idx} | тгк: @rostunnel"
 
           items = []
           names = []
@@ -122,14 +138,14 @@ jobs:
               encoding="utf-8"
           )
 
-          out = []
+          matched = []
           seen = set()
 
           for name in names:
               q = urllib.parse.quote(name, safe="")
               for k in keys:
                   if q in k and k not in seen:
-                      out.append(k)
+                      matched.append(k)
                       seen.add(k)
                       break
 
@@ -137,9 +153,20 @@ jobs:
           working_comments = []
 
           for i, item in enumerate(items, 1):
-              if i <= len(out):
-                  working_vless.append(f"{i:03d}. {out[i-1]}")
-                  working_comments.append(f'{item["flag"]} LTE {i} | тгк: @rostunnel')
+              if i > len(matched):
+                  break
+
+              vless = matched[i - 1]
+              comment = extract_comment(vless)
+              comment = normalize_comment(comment or item["name"], item["flag"], i)
+
+              if "#" in vless:
+                  base = vless.split("#", 1)[0]
+              else:
+                  base = vless
+
+              working_vless.append(f"{i:03d}. {base}#{comment}")
+              working_comments.append(f"{comment}")
 
           pathlib.Path("checked/working_vless.txt").write_text(
               "\n".join(working_vless) + ("\n" if working_vless else ""),
