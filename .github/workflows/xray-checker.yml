@@ -8,7 +8,7 @@ on:
         required: true
         default: "--help"
   schedule:
-    - cron: "0 */30 * * *"
+    - cron: "*/30 * * * *"
 
 jobs:
   run-xray-checker:
@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          curl -fsSL "http://150.241.65.18:9091/metrics/job/github-actions" > metrics.txt
+          curl -fsSL "http://150.241.65.18:9091/metrics" > metrics.txt
           curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
 
           python3 - <<'PY'
@@ -69,7 +69,7 @@ jobs:
           for line in metrics:
               if 'xray_proxy_status' not in line:
                   continue
-              if not line.rstrip().endswith(" 1"):
+              if not line.strip().endswith(" 1"):
                   continue
               m = re.search(r'name="([^"]+)"', line)
               if m:
