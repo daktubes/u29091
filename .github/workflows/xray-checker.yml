@@ -72,12 +72,12 @@ jobs:
 
           def flag_from_ip(ip):
               try:
-                  with urllib.request.urlopen(f"https://ipapi.co/{ip}/json/", timeout=8) as r:
+                  with urllib.request.urlopen(f"http://ip-api.com/json/{ip}", timeout=8) as r:
                       data = json.loads(r.read().decode("utf-8", "ignore"))
-                  code = data.get("country_code")
-                  if code and len(code) == 2:
-                      code = code.upper()
-                      return chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
+                  if data.get("countryCode"):
+                      code = data["countryCode"].upper()
+                      if len(code) == 2:
+                          return chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
               except Exception:
                   pass
               return "🌐"
