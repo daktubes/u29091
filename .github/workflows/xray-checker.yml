@@ -65,8 +65,8 @@ jobs:
           curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
 
           python3 - <<'PY'
-          import pathlib, re, json, urllib.parse, urllib.request, html
-          from urllib.parse import urlparse, parse_qs, unquote
+          import pathlib, re, json, urllib.parse, urllib.request
+          from urllib.parse import unquote
 
           metrics = pathlib.Path("metrics.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
           keys = pathlib.Path("all_keys.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
@@ -94,16 +94,15 @@ jobs:
           def extract_comment(vless_line):
               if "#" not in vless_line:
                   return ""
-              comment = vless_line.split("#", 1)[1]
-              return urllib.parse.unquote(comment).strip()
+              return unquote(vless_line.split("#", 1)[1]).strip()
 
           def has_flag(text):
               return bool(re.search(r'[\U0001F1E6-\U0001F1FF]{2}', text))
 
-          def normalize_comment(name, flag, idx):
-              raw = unquote(name).strip()
-              if has_flag(raw):
-                  return raw
+          def normalize_comment(raw_comment, flag, idx):
+              raw_comment = unquote(raw_comment).strip()
+              if has_flag(raw_comment):
+                  return raw_comment
               return f"{flag} LTE {idx} | тгк: @rostunnel"
 
           items = []
@@ -133,11 +132,6 @@ jobs:
               })
               names.append(name)
 
-          pathlib.Path("checked/working_names.txt").write_text(
-              "\n".join(names) + ("\n" if names else ""),
-              encoding="utf-8"
-          )
-
           matched = []
           seen = set()
 
@@ -150,7 +144,6 @@ jobs:
                       break
 
           working_vless = []
-          working_comments = []
 
           for i, item in enumerate(items, 1):
               if i > len(matched):
@@ -160,13 +153,9 @@ jobs:
               comment = extract_comment(vless)
               comment = normalize_comment(comment or item["name"], item["flag"], i)
 
-              if "#" in vless:
-                  base = vless.split("#", 1)[0]
-              else:
-                  base = vless
-
-              working_vless.append(f"{i:03d}. {base}#{comment}")
-              working_comments.append(f"{comment}")
+              base = vless.split("#", 1)[0]
+              encoded_comment = urllib.parse.quote(comment, safe="@")
+              working_vless.append(f"{base}#{encoded_comment}")
 
           pathlib.Path("checked/working_vless.txt").write_text(
               "\n".join(working_vless) + ("\n" if working_vless else ""),
@@ -175,11 +164,6 @@ jobs:
 
           pathlib.Path("checked/working_vless_top100.txt").write_text(
               "\n".join(working_vless[:100]) + ("\n" if working_vless[:100] else ""),
-              encoding="utf-8"
-          )
-
-          pathlib.Path("checked/working_vless_comments.txt").write_text(
-              "\n".join(working_comments) + ("\n" if working_comments else ""),
               encoding="utf-8"
           )
           PY
