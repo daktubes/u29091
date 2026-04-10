@@ -58,7 +58,7 @@ jobs:
             --subscription-url=https://white-lists.vercel.app/api/filter?code=RU \
             --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/configs/url_work.txt \
             --subscription-url=https://raw.githubusercontent.com/ByeWhiteLists/ByeWhiteLists2/refs/heads/main/ByeWhiteLists2.txt \
-            --metrics-push-url=http://150.241.65.18:9091 \
+            --metrics-push-url=http://pushuser:pushuser@150.241.65.18:9091 \
             --metrics-instance=github-actions \
             --proxy-check-method=status \
             --run-once
