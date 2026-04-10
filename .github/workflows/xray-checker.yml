@@ -8,7 +8,7 @@ on:
         required: true
         default: "--help"
   schedule:
-    - cron: "*/35 * * * *"
+    - cron: "*/45 * * * *"
 
 permissions:
   contents: write
