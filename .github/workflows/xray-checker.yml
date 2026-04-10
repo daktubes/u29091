@@ -42,8 +42,10 @@ jobs:
           tar xzf "${{ steps.latest-release.outputs.archive_name }}"
           chmod +x xray-checker
 
-      - name: Run xray-checker TEST + LOCAL SAVE
+      - name: Run xray-checker
         working-directory: xray-checker
+        env:
+          INSTANCE: ${{ secrets.INSTANCE || 'github-actions' }}
         run: |
           set -euo pipefail
           ./xray-checker \
@@ -51,23 +53,25 @@ jobs:
             --subscription-url=https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt \
             --subscription-url=https://raw.githubusercontent.com/EtoNeYaProject/etoneyaproject.github.io/refs/heads/main/whitelist \
             --subscription-url=https://wlrus.lol/confs/selected.txt \
+            --subscription-url=https://vpn.yzewe.ru/1973871940/Lq9tizBuc-D-eGdZOuhG0g \
             --subscription-url=https://raw.githubusercontent.com/elenavatrunkina-Testhub/B-c-v-i-p/refs/heads/main/VipBC.txt \
             --subscription-url=https://raw.githubusercontent.com/gergew452/Generation-Liberty/refs/heads/main/githubmirror/best.txt \
             --subscription-url=https://white-lists.vercel.app/api/filter?code=RU \
+            --subscription-url=https://raw.githubusercontent.com/prominbro/sub/refs/heads/main/212.txt \
             --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/configs/url_work.txt \
+            --subscription-url=https://mygala.ru/vpn/premium.php \
             --subscription-url=https://raw.githubusercontent.com/ByeWhiteLists/ByeWhiteLists2/refs/heads/main/ByeWhiteLists2.txt \
-            --metrics-push-url="" \
+            --metrics-push-url=http://150.241.65.18:9091/metrics/job/github-actions \
+            --metrics-instance=github-actions \
+            --proxy-check-method=status \
             --run-once
 
-      - name: Build working keys from LOCAL METRICS
+      - name: Build working keys
         run: |
           set -euo pipefail
-          
-          # 1. Получаем все ключи
-          curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt 2>/dev/null || echo "" > all_keys.txt
-          
-          # 2. Создаём метрики из локального состояния xray-checker  
-          cd xray-checker && curl -s localhost:2112/metrics > ../metrics.txt || echo "" > metrics.txt
+
+          curl -fsSL "http://150.241.65.18:9091/metrics" > metrics.txt
+          curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
 
           python3 - <<'PY'
           import pathlib, re, json, urllib.parse, urllib.request
