@@ -42,10 +42,8 @@ jobs:
           tar xzf "${{ steps.latest-release.outputs.archive_name }}"
           chmod +x xray-checker
 
-      - name: Run xray-checker
+      - name: Run xray-checker TEST + LOCAL SAVE
         working-directory: xray-checker
-        env:
-          INSTANCE: ${{ secrets.INSTANCE || 'github-actions' }}
         run: |
           set -euo pipefail
           ./xray-checker \
@@ -58,17 +56,18 @@ jobs:
             --subscription-url=https://white-lists.vercel.app/api/filter?code=RU \
             --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/configs/url_work.txt \
             --subscription-url=https://raw.githubusercontent.com/ByeWhiteLists/ByeWhiteLists2/refs/heads/main/ByeWhiteLists2.txt \
-            --metrics-push-url=http://test:test@150.241.65.18:9092 \
-            --metrics-instance=github-actions \
-            --proxy-check-method=status \
+            --metrics-push-url="" \
             --run-once
 
-      - name: Build working keys
+      - name: Build working keys from LOCAL METRICS
         run: |
           set -euo pipefail
-
-          curl -fsSL "http://150.241.65.18:9091/metrics" > metrics.txt
-          curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
+          
+          # 1. Получаем все ключи
+          curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt 2>/dev/null || echo "" > all_keys.txt
+          
+          # 2. Создаём метрики из локального состояния xray-checker  
+          cd xray-checker && curl -s localhost:2112/metrics > ../metrics.txt || echo "" > metrics.txt
 
           python3 - <<'PY'
           import pathlib, re, json, urllib.parse, urllib.request
