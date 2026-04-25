@@ -54,9 +54,8 @@ jobs:
             --subscription-url=https://wlrus.lol/confs/selected.txt \
             --subscription-url=https://vpn.yzewe.ru/1973871940/Lq9tizBuc-D-eGdZOuhG0g?type=%D0%90%D0%BD%D1%82%D0%B8%D0%B1%D0%BB%D0%BE%D0%BA \
             --subscription-url=https://raw.githubusercontent.com/elenavatrunkina-Testhub/B-c-v-i-p/refs/heads/main/VipBC.txt \
-            --subscription-url=https://raw.githubusercontent.com/gergew452/Generation-Liberty/refs/heads/main/githubmirror/best.txt \
-            --subscription-url=https://white-lists.vercel.app/api/filter?code=RU \
             --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/configs/url_work.txt \
+            --subscription-url=https://raw.githubusercontent.com/Temnuk/naabuzil/refs/heads/main/whitelist_full \
             --metrics-push-url=http://150.241.65.18:9091/metrics/job/github-actions \
             --metrics-instance=github-actions \
             --proxy-check-method=status \
