@@ -53,7 +53,6 @@ jobs:
             --subscription-url=https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt \
             --subscription-url=https://wlrus.lol/confs/selected.txt \
             --subscription-url=https://raw.githubusercontent.com/elenavatrunkina-Testhub/B-c-v-i-p/refs/heads/main/VipBC.txt \
-            --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/configs/url_work.txt \
             --subscription-url=https://raw.githubusercontent.com/Temnuk/naabuzil/refs/heads/main/whitelist_full \
             --metrics-push-url=http://144.31.164.23:9091/metrics/job/github-actions \
             --metrics-instance=github-actions \
