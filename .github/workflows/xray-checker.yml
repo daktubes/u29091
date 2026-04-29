@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           ./xray-checker \
-            --subscription-url=https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-all.txt \
+            --subscription-url=https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-checked.txt \
             --subscription-url=https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt \
             --subscription-url=https://wlrus.lol/confs/selected.txt \
             --subscription-url=https://raw.githubusercontent.com/elenavatrunkina-Testhub/B-c-v-i-p/refs/heads/main/VipBC.txt \
