@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          curl -fsSL "http://144.31.164.23:9091/metrics" > metrics.txt
+          curl -fsSL "http://144.31.224.163:9091/metrics" > metrics.txt
           curl -fsSL "https://subrostunnel.vercel.app/obsh.txt" | base64 -d > all_keys.txt
 
           python3 - <<'PY'
