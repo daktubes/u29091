@@ -53,7 +53,7 @@ jobs:
             --subscription-url=https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt \
             --subscription-url=https://wlrus.lol/confs/selected.txt \
             --subscription-url=https://raw.githubusercontent.com/SilentGhostCodes/WhiteListVpn/refs/heads/main/Whitelist.txt \
-            --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/configs/url_work.txt \
+            --subscription-url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/whitelist.txt \
             --subscription-url=https://vpn.tgflovv.ru:8000/free-white/25079ee4-5ffb-4349-8277-51976a75a1d3 \
             --subscription-url=https://vpn.tgflovv.ru:8000/free-white-ru/25079ee4-5ffb-4349-8277-51976a75a1d3 \
             --subscription-url=https://gitverse.ru/api/repos/flaafix/AetrisVPN/raw/branch/master/AetrisVPN.txt \
