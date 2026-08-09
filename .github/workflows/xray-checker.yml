@@ -61,6 +61,7 @@ jobs:
             --metrics-push-url=http://144.31.224.163:9091/metrics/job/github-actions \
             --metrics-instance=github-actions \
             --proxy-check-method=status \
+            --proxy-status-check-url=https://captive.apple.com/hotspot-detect.html \
             --run-once
 
       - name: Build working keys
